@@ -1,10 +1,10 @@
 import asyncio
 import requests
-import urllib3
 from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
 from xknx.telegram import Telegram
 from xknx.telegram.address import GroupAddress
+from xknx.telegram.apci import GroupValueWrite
 from xknx.dpt import (
     DPTTemperature,
     DPTHumidity,
@@ -40,13 +40,6 @@ IP_ROUTER_IP = "192.168.100.211"
 IP_ROUTER_PORT = 3671
 
 # ==============================================================================
-# 3. KONFIGURACJA KNX COMMANDER (HTTP API)
-# ==============================================================================
-KNX_API_BASE_URL = "https://knx-commander.local:44395"
-KNX_API_KEY = "YOUR_SECRET_TOKEN"
-KNX_API_VERIFY_SSL = False
-
-# ==============================================================================
 # 4. MAPOWANIE PÓL API -> ADRES GRUPOWY + DPT
 # ==============================================================================
 DPT_MAP = {
@@ -54,44 +47,8 @@ DPT_MAP = {
         "ga": "1/2/0",
         "dpt": "9.001",
         "klasa": DPTTemperature,
-    },
-    # "apparent_temperature": {
-    #     "ga": "3/0/5",
-    #     "dpt": "9.001",
-    #     "klasa": DPTTemperature,
-    # },
-    # "is_day": {
-    #     "ga": "3/0/6",
-    #     "dpt": "1.001",
-    #     "klasa": DPTSwitch,
-    # },
-    # "rain": {
-    #     "ga": "3/0/7",
-    #     "dpt": "9.026",
-    #     "klasa": DPTRainAmount,
-    # },
-    # "relative_humidity_2m": {
-    #     "ga": "3/0/8",
-    #     "dpt": "9.007",
-    #     "klasa": DPTHumidity,
-    # },
-    # "cloud_cover": {
-    #     "ga": "3/0/3",
-    #     "dpt": "5.001",
-    #     "klasa": DPTScaling,
-    # },
-    # "wind_speed_10m": {
-    #     "ga": "3/0/2",
-    #     "dpt": "9.028",
-    #     "klasa": DPTWspKmh,
-    # },
-    # "direct_normal_irradiance": {
-    #     "ga": "3/0/4",
-    #     "dpt": "9.022",
-    #     "klasa": DPTPowerDensity,
-    # },
+    }
 }
-
 
 # ==============================================================================
 # 5. POBIERANIE DANYCH (tylko current weather)
@@ -177,7 +134,7 @@ async def wyslij_przez_xknx(przetworzone):
         for item in przetworzone:
             telegram = Telegram(
                 destination_address=GroupAddress(item["ga"]),
-                payload=item["payload"],
+                payload=GroupValueWrite(item["payload"]),
             )
             await knx.telegrams.put(telegram)
             print(f"[KNX] Wysłano {item['field']} ({item['dpt']}) na {item['ga']}")
@@ -186,53 +143,6 @@ async def wyslij_przez_xknx(przetworzone):
     finally:
         await knx.stop()
         print("[KNX] Rozłączono z magistralą.")
-
-
-# ==============================================================================
-# 8. WYSYŁKA - OPCJA 2: KNX Commander HTTP API
-# ==============================================================================
-def formatuj_wartosc_api(field, wartosc):
-    if field == "is_day":
-        return "1" if wartosc else "0"
-    return str(wartosc)
-
-
-def wyslij_przez_knx_api(dane):
-    headers = {
-        "Content-Type": "application/json-patch+json",
-        "X-Api-Key": KNX_API_KEY,
-    }
-
-    if not KNX_API_VERIFY_SSL:
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    for field, cfg in DPT_MAP.items():
-        if field not in dane or dane[field] is None:
-            continue
-
-        main, middle, sub = cfg["ga"].split("/")
-        url = (
-            f"{KNX_API_BASE_URL}/api/v1/datapoints/"
-            f"{main}/{middle}/{sub}/value"
-        )
-        body = {"value": formatuj_wartosc_api(field, dane[field])}
-
-        try:
-            response = requests.put(
-                url,
-                headers=headers,
-                json=body,
-                verify=KNX_API_VERIFY_SSL,
-                timeout=5,
-            )
-            response.raise_for_status()
-            print(
-                f"[HTTP] {field} ({cfg['dpt']}) -> {cfg['ga']} "
-                f"= {body['value']} (HTTP {response.status_code})"
-            )
-        except requests.RequestException as e:
-            print(f"[BŁĄD HTTP] {field} ({cfg['ga']}): {e}")
-
 
 # ==============================================================================
 # 9. MAIN - tutaj wybieramy, które funkcje uruchamiamy
@@ -245,13 +155,9 @@ def main():
     print("\n[DPT] Konwersja na formaty KNX:")
     przetworzone = przetworz_na_dpt(dane)
 
-    print("\n[WYSYŁKA] Wybrana opcja:")
+    print("\n[WYSYŁKA] ")
 
-    # OPCJA 1: biblioteka xknx (wymaga odkomentowania też konwersji DPT powyżej)
-    # asyncio.run(wyslij_przez_xknx(przetworzone))
-
-    # OPCJA 2: KNX Commander HTTP API (używa surowych danych z API)
-    # wyslij_przez_knx_api(dane)
+    asyncio.run(wyslij_przez_xknx(przetworzone))
 
 
 if __name__ == "__main__":
