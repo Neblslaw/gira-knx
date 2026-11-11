@@ -1,0 +1,17 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 python3-venv ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip install --no-cache-dir requests urllib3 xknx
+
+WORKDIR /app
+COPY weather_to_knx.py .
+
+CMD ["python3", "weather_to_knx.py"]

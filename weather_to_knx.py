@@ -1,4 +1,6 @@
 import asyncio
+import time
+
 import requests
 from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
@@ -168,16 +170,19 @@ async def wyslij_przez_xknx(przetworzone):
 # MAIN
 # ==============================================================================
 def main():
-    dane = pobierz_dane_pogodowe()
-    if dane is None:
-        return
+    while True:
+        dane = pobierz_dane_pogodowe()
+        if dane is None:
+            return
 
-    print("\n[DPT] Konwersja na formaty KNX:")
-    przetworzone = przetworz_na_dpt(dane)
+        print("\n[DPT] Konwersja na formaty KNX:")
+        przetworzone = przetworz_na_dpt(dane)
 
-    print("\n[WYSYŁKA]")
+        print("\n[WYSYŁKA]")
 
-    asyncio.run(wyslij_przez_xknx(przetworzone))
+        asyncio.run(wyslij_przez_xknx(przetworzone))
+
+        time.sleep(5*60)
 
 
 if __name__ == "__main__":

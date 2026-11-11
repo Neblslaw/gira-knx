@@ -1,0 +1,9 @@
+FROM python:3.14-slim
+
+WORKDIR /app
+
+COPY weather_to_knx.py .
+
+RUN pip install --no-cache-dir requests urllib3 xknx
+
+CMD ["python3", "weather_to_knx.py"]
