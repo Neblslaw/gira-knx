@@ -4,19 +4,17 @@ from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
 from xknx.telegram import Telegram
 from xknx.telegram.address import GroupAddress
-from xknx.telegram.apci import GroupValueWrite
 from xknx.dpt import (
     DPTTemperature,
     DPTHumidity,
     DPTScaling,
     DPTWspKmh,
-    DPTRainAmount,
     DPTPowerDensity,
-    DPTSwitch,
 )
+from xknx.telegram.apci import GroupValueWrite
 
 # ==============================================================================
-# 1. KONFIGURACJA API POGODOWEGO
+# KONFIGURACJA API POGODOWEGO
 # ==============================================================================
 LATITUDE = 52.52
 LONGITUDE = 13.41
@@ -34,24 +32,46 @@ CURRENT_FIELDS = [
 ]
 
 # ==============================================================================
-# 2. KONFIGURACJA KNX (biblioteka xknx)
+# KONFIGURACJA KNX (biblioteka xknx)
 # ==============================================================================
 IP_ROUTER_IP = "192.168.100.211"
 IP_ROUTER_PORT = 3671
 
+
 # ==============================================================================
-# 4. MAPOWANIE PÓL API -> ADRES GRUPOWY + DPT
+#  MAPOWANIE PÓL API -> ADRES GRUPOWY + DPT
 # ==============================================================================
 DPT_MAP = {
     "temperature_2m": {
         "ga": "1/2/0",
         "dpt": "9.001",
         "klasa": DPTTemperature,
-    }
+    },
+    "relative_humidity_2m": {
+        "ga": "1/2/1",
+        "dpt": "9.007",
+        "klasa": DPTHumidity,
+    },
+    "cloud_cover": {
+        "ga": "1/2/2",
+        "dpt": "9.007",
+        "klasa": DPTScaling,
+    },
+    "direct_normal_irradiance": {
+        "ga": "1/2/3",
+        "dpt": "9.022",
+        "klasa": DPTPowerDensity,
+    },
+    "wind_speed_10m": {
+        "ga": "1/2/4",
+        "dpt": "9.005",
+        "klasa": DPTWspKmh,
+    },
 }
 
+
 # ==============================================================================
-# 5. POBIERANIE DANYCH (tylko current weather)
+# POBIERANIE DANYCH (tylko current weather)
 # ==============================================================================
 def pobierz_dane_pogodowe():
     params = {
@@ -76,7 +96,7 @@ def pobierz_dane_pogodowe():
 
 
 # ==============================================================================
-# 6. KONWERSJA NA DPT (można zakomentować w main, jeśli używamy tylko HTTP API)
+# KONWERSJA NA DPT (można zakomentować w main, jeśli używamy tylko HTTP API)
 # ==============================================================================
 def przetworz_na_dpt(dane):
     przetworzone = []
@@ -116,7 +136,7 @@ def przetworz_na_dpt(dane):
 
 
 # ==============================================================================
-# 7. WYSYŁKA - OPCJA 1: biblioteka xknx (bezpośrednio do IP-Routera)
+# WYSYŁKA - OPCJA 1: biblioteka xknx (bezpośrednio do IP-Routera)
 # ==============================================================================
 async def wyslij_przez_xknx(przetworzone):
     knx = XKNX(
@@ -145,7 +165,7 @@ async def wyslij_przez_xknx(przetworzone):
         print("[KNX] Rozłączono z magistralą.")
 
 # ==============================================================================
-# 9. MAIN - tutaj wybieramy, które funkcje uruchamiamy
+# MAIN
 # ==============================================================================
 def main():
     dane = pobierz_dane_pogodowe()
@@ -155,7 +175,7 @@ def main():
     print("\n[DPT] Konwersja na formaty KNX:")
     przetworzone = przetworz_na_dpt(dane)
 
-    print("\n[WYSYŁKA] ")
+    print("\n[WYSYŁKA]")
 
     asyncio.run(wyslij_przez_xknx(przetworzone))
 
