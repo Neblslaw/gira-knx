@@ -56,7 +56,7 @@ DPT_MAP = {
     },
     "cloud_cover": {
         "ga": "1/2/2",
-        "dpt": "9.007",
+        "dpt": "5.001",
         "klasa": DPTScaling,
     },
     "direct_normal_irradiance": {
