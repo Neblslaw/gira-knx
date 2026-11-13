@@ -1,20 +1,7 @@
 
 
 docker build -f Dockerfile.ubuntu -t gira-python:ubuntu .
-docker run --rm --network host gira-python:ubuntu
+docker run -d --rm --network host --name gira_knx_lab2 gira-python:ubuntu 
+
+
 docker rmi gira-python:ubuntu
-
-
-docker build -f Dockerfile.python -t gira-python:python .          
-docker run --rm --network host gira-python:python
-docker rmi gira-python:python
-
-
-
-
-
-
-
-
-
-
