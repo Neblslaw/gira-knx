@@ -166,6 +166,11 @@ async def wyslij_przez_xknx(przetworzone):
         await knx.stop()
         print("[KNX] Rozłączono z magistralą.")
 
+def zapisz_dane_do_csv(dane):
+    with open("data/dane.csv", "a", encoding="utf-8") as f:
+        f.write(f"{dane["time"]},{dane["temperature_2m"]},{dane["relative_humidity_2m"]},{dane["cloud_cover"]},{dane["direct_normal_irradiance"]},{dane["wind_speed_10m"]}\n")
+
+
 # ==============================================================================
 # MAIN
 # ==============================================================================
@@ -174,6 +179,8 @@ def main():
         dane = pobierz_dane_pogodowe()
         if dane is None:
             return
+
+        zapisz_dane_do_csv(dane)
 
         print("\n[DPT] Konwersja na formaty KNX:")
         przetworzone = przetworz_na_dpt(dane)
